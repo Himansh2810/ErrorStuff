@@ -1,80 +1,94 @@
-const {evaluate,derivative,complex} = require("mathjs");
+const { evaluate, derivative, complex } = require("mathjs");
 
-let fun = "x^2+x+4";
-let n=2;
+let fun = "x^2+x-4";
+let n = 2;
 
-function loop(){
-    let i=1;
+function loop() {
+    let i = 1;
     let ans = [1];
-   while(i<40){
-       ans[i] = logic(ans[i-1]);
 
-    //    if(isNaN(ans[i])){
-    //       return NaN
-    //    }
+    let root = [];
 
-       if(typeof ans[i] === 'object'){
-           console.log(ans[i])
-           let compled = complex(ans[i].real,ans[i].im)
-           console.log( evaluate(fun,{x:compled}))
-           return
-       }
+    for (let k = 0; k < 2; k++) {
+        while (i < 40) {
+            ans[i] = logic(ans[i - 1], k);
 
-       if(ans[i] == ans[i-1]){
-         console.log(i);
-          return ans[i];
-       }
+            //    if(isNaN(ans[i])){
+            //       return NaN
+            //    }
 
-       let res = evaluate(fun,{x:ans[i]});
+            if (typeof ans[i] === "object") {
+                console.log(ans[i]);
+                let compled = complex(ans[i].real, ans[i].im);
+                let data = evaluate(fun, { x: compled });
+                if ((Math.abs(data.re) < 1e-7 && Math.abs(data.im) < 1e-7) || (data.re == 0 && data.im == 0)) {
+                    root.push(ans[i].real + "+(" + ans[i].im + ")*i");
+                    break;
+                }
+            }
 
-       if(res == 0 || (Math.abs(res) < 1e-5)){
-        console.log(i);
-        console.log(res)
-         return ans[i];
-       }
+            // if (ans[i] == ans[i - 1]) {
+            //     console.log(i);
+            //     let data = evaluate(fun,{x:ans[i]})
+            //     console.log("res:",data)
+            //     if(data ==)
+            //     root.push(ans[i]);
+            //     break;
+            // }
 
-       i++;
-   }
+            let res = evaluate(fun, { x: ans[i] });
 
-   return NaN;
+            if (res == 0 || Math.abs(res) < 1e-7) {
+                root.push(ans[i]);
+                break;
+            }
+
+            i++;
+        }
+    }
+
+    return root;
 }
 
+function logic(x, k) {
+    let fd = derivative(fun, "x");
+    let sderiv = derivative(fd.toString(), "x").evaluate({ x });
+    let fderiv = fd.evaluate({ x });
 
-function logic(x){
-      let fd = derivative(fun,'x');
-      let sderiv = derivative(fd.toString(),'x').evaluate({x});
-      let fderiv = fd.evaluate({x});
+    let fval = evaluate(fun, { x });
 
-      let fval = evaluate(fun,{x});
+    if (fval == 0) {
+        return x;
+    }
 
-      if(fval ==0 ){
-         return x;
-      }
+    let G = fderiv / fval;
+    let H = G ** 2 - sderiv / fval;
 
-      let G = fderiv/fval;
-      let H = G**2 - (sderiv/fval);
+    let A = (n - 1) * (n * H - G ** 2);
+    let a;
+    if (A >= 0) {
+        if (k == 0) {
+            a = n / (G + Math.sqrt(A));
+        } else {
+            a = n / (G - Math.sqrt(A));
+        }
 
-      let A = (n-1)*(n*H-G**2);
-      let a;
-      if(A >= 0){
-         a = n / (G + Math.sqrt(A));
-         console.log("a :",a);
+        return x - a;
+    } else {
+        A = 0 - A;
 
-         return x-a;
-      }
-      else{
-
-         A = 0-A;
-         return {
-            real: x- ((n*G)/(G**2+A)),
-            im:(n*Math.sqrt(A))/(G**2+A)
-         }
-      }
-
-
-      
-      
+        if (k == 0) {
+            return {
+                real: x - (n * G) / (G ** 2 + A),
+                im: (n * Math.sqrt(A)) / (G ** 2 + A)
+            };
+        } else {
+            return {
+                real: x - (n * G) / (G ** 2 + A),
+                im: (-n * Math.sqrt(A)) / (G ** 2 + A)
+            };
+        }
+    }
 }
 
-
-console.log(loop());
+console.log("roots:", loop());
